@@ -1,0 +1,42 @@
+plugins {
+    id 'java'
+    id 'maven-publish'
+}
+
+repositories {
+    mavenLocal()
+    maven {
+        url = uri('https://repo.maven.apache.org/maven2/')
+    }
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.keycloak:keycloak-core:17.0.0'
+    implementation 'org.keycloak:keycloak-server-spi:17.0.0'
+    implementation 'org.keycloak:keycloak-server-spi-private:17.0.0'
+    implementation 'org.keycloak:keycloak-services:17.0.0'
+
+    implementation 'com.amazonaws:amazon-kinesis-producer:0.14.10'
+}
+
+description = 'keycloak-extensions'
+java.sourceCompatibility = JavaVersion.VERSION_11
+
+task dockerimage(type: Exec, dependsOn: build) {
+    commandLine "docker", "build", "-t", "keycloak-extensions:latest", "."
+}
+
+dockerimage.finalizedBy
+
+task copyToLib(type: Copy) {
+    from configurations.runtimeClasspath
+            .exclude(group: 'org.keycloak', module: 'keycloak-core')
+            .exclude(group: 'org.keycloak', module: 'keycloak-services')
+            .exclude(group: 'org.keycloak', module: 'keycloak-server-spi-private')
+            .exclude(group: 'org.keycloak', module: 'keycloak-server-spi')
+    into "$buildDir/libs/jars"
+    duplicatesStrategy "exclude"
+}
+
+jar { dependsOn copyToLib }

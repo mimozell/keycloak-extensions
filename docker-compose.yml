@@ -1,0 +1,43 @@
+version: '3'
+
+volumes:
+  postgres_data:
+    driver: local
+
+services:
+  postgres-db:
+    image: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: password
+      JDBC_PARAMS: "connectTimeout=30000"
+    ports:
+      - 5432:5432
+  keycloak:
+    links:
+      - postgres-db
+    image: keycloak-extensions:latest
+    volumes:
+      - ./imports:/opt/jboss/keycloak/imports
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HOSTNAME: localhost:8080
+      KC_DB_URL: jdbc:postgresql://postgres-db:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: password
+      STARTCOMMAND: start-dev
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - mailhog
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mailhog
+    ports:
+      - "8025:8025"
+      - "1025:1025"
